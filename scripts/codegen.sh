@@ -1,0 +1,47 @@
+#!/bin/bash
+# Generate Python protobuf files from proto definitions
+# Requires: pip install grpcio-tools mypy-protobuf
+# This script should be run from the repository root.
+
+set -e
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROTO_DIR="$REPO_ROOT/proto"
+SRC_DIR="$REPO_ROOT/src/onyxpublic"
+
+echo "Generating Python protobuf definitions....."
+
+# Ensure output directory exists (it's the common parent)
+mkdir -p "$SRC_DIR"
+
+# Generate for Onyx API and Common tools
+python -m grpc_tools.protoc \
+  --proto_path="$PROTO_DIR" \
+  --proto_path="$PROTO_DIR/google/api" \
+  --python_out="$SRC_DIR" \
+  --grpc_python_out="$SRC_DIR" \
+  --mypy_out="$SRC_DIR" \
+  --mypy_grpc_out="$SRC_DIR" \
+  "$PROTO_DIR/api/onyx.proto" \
+  "$PROTO_DIR/common/common.proto"
+
+# Fix imports: protoc generates "import common_pb2" but we need "from onyxpublic.common import common_pb2"
+echo "Fixing imports to use package imports..."
+
+# In onyx_pb2.py and onyx_pb2_grpc.py, fix common imports
+for f in "$SRC_DIR/api"/onyx_pb2*.py; do
+    if [ -f "$f" ]; then
+        # On macOS, sed -i requires an empty string for the extension
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' 's/from common import common_pb2/from onyxpublic.common import common_pb2/g' "$f"
+        else
+            sed -i 's/from common import common_pb2/from onyxpublic.common import common_pb2/g' "$f"
+        fi
+        echo "  Fixed $f"
+    fi
+done
+
+# Note: inject_docstrings.py might need path updates if it was relative
+# echo "Injecting docstrings from .proto comments..."
+# python "$REPO_ROOT/scripts/inject_docstrings.py"
+

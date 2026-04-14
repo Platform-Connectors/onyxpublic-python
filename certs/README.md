@@ -1,0 +1,1 @@
+The sintela.pem file can be used as a CA to validate Onyx software server certificates. Note that when connecting via a Sintela provided URL then the ca certifiction is not required.
