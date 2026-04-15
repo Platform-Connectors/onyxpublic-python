@@ -20,11 +20,14 @@ python -m grpc_tools.protoc `
 
 Write-Host "Fixing imports to use package imports..." -ForegroundColor Green
 
-# Fix imports in onyx_pb2.py to use relative/absolute imports that work with the package structure
-# Typically: 'from common import common_pb2' -> 'from onyxpublic.common import common_pb2'
-Get-ChildItem -Path "$srcDir/api" -Filter "onyx_pb2*.py" | ForEach-Object {
+# Fix imports in generated api files to use package-qualified paths for runtime and type stubs.
+# Typical fixes:
+#   'from common import common_pb2' -> 'from onyxpublic.common import common_pb2'
+#   'from api import onyx_pb2' -> 'from onyxpublic.api import onyx_pb2'
+Get-ChildItem -Path "$srcDir/api/onyx_pb2*.py", "$srcDir/api/onyx_pb2*.pyi" | ForEach-Object {
     $content = Get-Content -Path $_.FullName -Raw
     $newContent = $content -replace "from common import common_pb2", "from onyxpublic.common import common_pb2"
+    $newContent = $newContent -replace "from api import onyx_pb2", "from onyxpublic.api import onyx_pb2"
     Set-Content -Path $_.FullName -Value $newContent
     Write-Host "  Fixed $($_.Name)"
 }
