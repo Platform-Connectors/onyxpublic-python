@@ -61,9 +61,12 @@ jobs:
       - name: Diff coverage (changed lines >= 95%, PR only)
         if: github.event_name == 'pull_request'
         run: |
+          set +e
           uvx --from diff-cover diff-cover coverage.xml \
             --compare-branch=origin/${{ github.base_ref }} \
             --fail-under=95 \
             --markdown-report=diff-cover.md
+          EXIT_CODE=$?
           echo "## Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"
+          exit $EXIT_CODE
