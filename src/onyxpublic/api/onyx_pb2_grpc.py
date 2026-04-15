@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from api import onyx_pb2 as api_dot_onyx__pb2
+from onyxpublic.api import onyx_pb2 as api_dot_onyx__pb2
 from onyxpublic.common import common_pb2 as common_dot_common__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
