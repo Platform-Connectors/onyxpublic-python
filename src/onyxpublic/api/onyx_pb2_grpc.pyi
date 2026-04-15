@@ -10,9 +10,9 @@ how to build a client;
 - documentation: https://sintela.atlassian.net/l/cp/j0ukrw3Q.
 """
 
-from api import onyx_pb2 as _onyx_pb2
+from onyxpublic.api import onyx_pb2 as _onyx_pb2
 from collections import abc as _abc
-from common import common_pb2 as _common_pb2
+from onyxpublic.common import common_pb2 as _common_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc import aio as _aio
 import abc as _abc_1
@@ -744,3 +744,4 @@ class OnyxServicer(metaclass=_abc_1.ABCMeta):
         """GetChainStatus returns the name of the current chain and if it is unsaved"""
 
 def add_OnyxServicer_to_server(servicer: OnyxServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...
+

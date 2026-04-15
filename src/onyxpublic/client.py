@@ -47,9 +47,10 @@ def _load_tls_credentials(
 
 def create_async_client(
     address: str,
+    *,
+    bearer_token: str,
     using_tls: bool = True,
     server_cert_path: str | None = None,
-    bearer_token: str | None = None,
 ) -> grpc.aio.Channel:
     """
     Create a new async gRPC client channel.
@@ -58,7 +59,7 @@ def create_async_client(
         address: Address including port number to connect to (e.g., "127.0.0.1:8181")
         using_tls: True to use TLS
         server_cert_path: Optional path to server CA certificate
-        bearer_token: Optional bearer token for authentication.
+        bearer_token: Required bearer token for authentication.
 
     Supported TLS auth modes:
         - TLS with server CA only
@@ -72,13 +73,10 @@ def create_async_client(
             server_cert_path=server_cert_path,
         )
 
-        if bearer_token:
-            call_credentials = grpc.metadata_call_credentials(
-                BearerTokenAuth(bearer_token)
-            )
-            credentials = grpc.composite_channel_credentials(
-                credentials, call_credentials
-            )
+        call_credentials = grpc.metadata_call_credentials(BearerTokenAuth(bearer_token))
+        credentials = grpc.composite_channel_credentials(
+            credentials, call_credentials
+        )
 
         return grpc.aio.secure_channel(address, credentials)
     return grpc.aio.insecure_channel(address)

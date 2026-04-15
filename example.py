@@ -72,7 +72,7 @@ async def main() -> None:
             loop.add_signal_handler(sig, stop_event.set)
 
     # Create a stream task
-    await device.start_detection_stream(
+    device.start_detection_stream(
         on_detection=handle_detection,
         on_error=handle_stream_error,
     )

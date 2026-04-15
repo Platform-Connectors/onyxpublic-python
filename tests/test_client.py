@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, mock_open, patch
 
+import pytest
+
 from onyxpublic.client import (
     BearerTokenAuth,
     _load_tls_credentials,
@@ -9,42 +11,60 @@ from onyxpublic.client import (
 )
 
 
-def test_bearer_token_auth_call():
-    """Verify that BearerTokenAuth correctly formats and returns the authorization metadata."""
-    token = "test-token"
+@pytest.mark.parametrize(
+    ("token", "expected_metadata"),
+    [
+        ("test-token", (("authorization", "Bearer test-token"),)),
+        ("   ", (("authorization", "Bearer    "),)),
+    ],
+)
+def test_bearer_token_auth_call(
+    token: str, expected_metadata: tuple[tuple[str, str], ...]
+) -> None:
+    """BearerTokenAuth should forward token content unchanged into authorization metadata."""
     auth = BearerTokenAuth(token)
     context = MagicMock()
     callback = MagicMock()
 
     auth(context, callback)
 
-    expected_metadata = (("authorization", f"Bearer {token}"),)
     callback.assert_called_once_with(expected_metadata, None)
 
 
-def test_load_tls_credentials_no_path():
-    """Verify that _load_tls_credentials uses default system CAs when no path is provided."""
-    with patch("grpc.ssl_channel_credentials") as mock_ssl:
-        _load_tls_credentials()
-        mock_ssl.assert_called_once_with(root_certificates=None)
-
-
-def test_load_tls_credentials_with_path():
-    """Verify that _load_tls_credentials reads and uses the provided server CA certificate file."""
-    cert_path = "certs/ca.crt"
-    cert_content = b"fake-cert-content"
-
-    with patch("builtins.open", mock_open(read_data=cert_content)):
+@pytest.mark.parametrize(
+    ("cert_path", "read_data", "expected_root_certificates"),
+    [
+        (None, None, None),
+        ("certs/ca.crt", b"fake-cert-content", b"fake-cert-content"),
+    ],
+)
+def test_load_tls_credentials(
+    cert_path: str | None,
+    read_data: bytes | None,
+    expected_root_certificates: bytes | None,
+) -> None:
+    """_load_tls_credentials should use system CAs or provided CA bytes based on cert_path."""
+    if cert_path is None:
         with patch("grpc.ssl_channel_credentials") as mock_ssl:
             _load_tls_credentials(cert_path)
-            mock_ssl.assert_called_once_with(root_certificates=cert_content)
+            mock_ssl.assert_called_once_with(
+                root_certificates=expected_root_certificates
+            )
+        return
+
+    with patch("builtins.open", mock_open(read_data=read_data)):
+        with patch("grpc.ssl_channel_credentials") as mock_ssl:
+            _load_tls_credentials(cert_path)
+            mock_ssl.assert_called_once_with(
+                root_certificates=expected_root_certificates
+            )
 
 
 def test_create_async_client_insecure():
     """Verify that create_async_client correctly initializes an insecure gRPC channel."""
     address = "127.0.0.1:8181"
     with patch("grpc.aio.insecure_channel") as mock_insecure:
-        create_async_client(address, using_tls=False)
+        create_async_client(address, using_tls=False, bearer_token="secret-token")
         mock_insecure.assert_called_once_with(address)
 
 

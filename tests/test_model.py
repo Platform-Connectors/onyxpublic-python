@@ -21,46 +21,56 @@ def test_detection_parse_severity_rejects_unknown_name() -> None:
         Detection.parse_severity("NOT_A_VALID_SEVERITY")
 
 
-def test_system_event_parse_level_accepts_integer_value() -> None:
-    """System event level should accept integer enum values."""
+@pytest.mark.parametrize(
+    ("parser", "value"),
+    [
+        (SystemEvent.parse_level, 1),
+        (SystemEvent.parse_status, 1),
+    ],
+)
+def test_system_event_parsers_accept_integer_value(parser, value: int) -> None:
+    """System event parser helpers should accept integer enum values."""
 
-    parsed = SystemEvent.parse_level(1)
-    assert parsed == 1
-
-
-def test_system_event_parse_level_rejects_unknown_name() -> None:
-    """System event level should reject unknown enum names."""
-
-    with pytest.raises(ValueError, match="Unknown level name"):
-        SystemEvent.parse_level("NOT_A_VALID_LEVEL")
-
-
-def test_system_event_parse_level_rejects_non_string_non_int() -> None:
-    """System event level should reject non-string and non-int values."""
-
-    with pytest.raises(TypeError, match="level must be an enum name string or integer"):
-        SystemEvent.parse_level(None)
+    parsed = parser(value)
+    assert parsed == value
 
 
-def test_system_event_parse_status_accepts_integer_value() -> None:
-    """System event status should accept integer enum values."""
+@pytest.mark.parametrize(
+    ("parser", "value", "error_type", "error_message"),
+    [
+        (
+            SystemEvent.parse_level,
+            "NOT_A_VALID_LEVEL",
+            ValueError,
+            "Unknown level name",
+        ),
+        (
+            SystemEvent.parse_status,
+            "NOT_A_VALID_STATUS",
+            ValueError,
+            "Unknown status name",
+        ),
+        (
+            SystemEvent.parse_level,
+            None,
+            TypeError,
+            "level must be an enum name string or integer",
+        ),
+        (
+            SystemEvent.parse_status,
+            None,
+            TypeError,
+            "status must be an enum name string or integer",
+        ),
+    ],
+)
+def test_system_event_parsers_reject_invalid_values(
+    parser,
+    value: object,
+    error_type: type[Exception],
+    error_message: str,
+) -> None:
+    """System event parser helpers should reject invalid names and unsupported types."""
 
-    parsed = SystemEvent.parse_status(1)
-    assert parsed == 1
-
-
-def test_system_event_parse_status_rejects_unknown_name() -> None:
-    """System event status should reject unknown enum names."""
-
-    with pytest.raises(ValueError, match="Unknown status name"):
-        SystemEvent.parse_status("NOT_A_VALID_STATUS")
-
-
-def test_system_event_parse_status_rejects_non_string_non_int() -> None:
-    """System event status should reject non-string and non-int values."""
-
-    with pytest.raises(
-        TypeError,
-        match="status must be an enum name string or integer",
-    ):
-        SystemEvent.parse_status(None)
+    with pytest.raises(error_type, match=error_message):
+        parser(value)

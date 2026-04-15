@@ -23,6 +23,23 @@ TIMEOUT_DETAIL_MARKERS: tuple[str, ...] = (
     "timeout",
 )
 
+CONNECTION_RESET_REASONS: frozenset[str] = frozenset(
+    {
+        "timeout",
+        "connection_refused",
+        "transport_unavailable",
+        "grpc_error",
+    }
+)
+
+CONNECT_ERROR_REASONS: frozenset[str] = frozenset(
+    {
+        "timeout",
+        "connection_refused",
+        "transport_unavailable",
+    }
+)
+
 
 class OnyxPublicError(Exception):
     """Base exception for this library."""
@@ -62,23 +79,19 @@ class EventStreamerConnectionError(OnyxPublicError, RuntimeError):
     """Raised when connection setup fails without a terminal gRPC error."""
 
 
-class OnyxAuthenticationError(OnyxPublicError, PermissionError):
+class AuthError(OnyxPublicError, PermissionError):
     """Raised when the server rejects credentials or authorization."""
 
 
-class OnyxConnectionTimeoutError(OnyxPublicError, TimeoutError):
-    """Raised when a device connection attempt exceeds its deadline."""
+class ConnectError(OnyxPublicError, ConnectionError):
+    """Raised for transport-level device connection failures.
+
+    Inspect ``reason`` to distinguish specific cases such as timeout,
+    connection_refused, and transport_unavailable.
+    """
 
 
-class OnyxConnectionRefusedError(OnyxPublicError, ConnectionRefusedError):
-    """Raised when the remote endpoint refuses the connection."""
-
-
-class OnyxConnectionError(OnyxPublicError, ConnectionError):
-    """Raised for transport-level device connection failures."""
-
-
-class OnyxDeviceNotConnectedError(OnyxPublicError, RuntimeError):
+class DeviceNotConnectedError(OnyxPublicError, RuntimeError):
     """Raised when an operation requires a connected device."""
 
 
@@ -123,30 +136,14 @@ def classify_grpc_connection_error(
     code, message, details = _grpc_error_parts(operation, exc)
 
     if exc.code() in AUTHENTICATION_GRPC_STATUS_CODES:
-        return OnyxAuthenticationError(
+        return AuthError(
             message,
             code=code,
             reason=reason,
             details=details,
         )
-    if exc.code() is grpc.StatusCode.DEADLINE_EXCEEDED or any(
-        marker in combined for marker in TIMEOUT_DETAIL_MARKERS
-    ):
-        return OnyxConnectionTimeoutError(
-            message,
-            code=code,
-            reason=reason,
-            details=details,
-        )
-    if any(marker in combined for marker in CONNECTION_REFUSED_DETAIL_MARKERS):
-        return OnyxConnectionRefusedError(
-            message,
-            code=code,
-            reason=reason,
-            details=details,
-        )
-    if exc.code() is grpc.StatusCode.UNAVAILABLE:
-        return OnyxConnectionError(
+    if reason in CONNECT_ERROR_REASONS:
+        return ConnectError(
             message,
             code=code,
             reason=reason,
@@ -158,3 +155,18 @@ def classify_grpc_connection_error(
         reason=reason,
         details=details,
     )
+
+
+def should_reset_connection(error: OnyxPublicError) -> bool:
+    """Return True when an RPC error should force a connection reset."""
+    return error.reason in CONNECTION_RESET_REASONS
+
+
+def classify_grpc_connection_error_with_reset(
+    exc: grpc.aio.AioRpcError,
+    *,
+    operation: str,
+) -> tuple[OnyxPublicError, bool]:
+    """Classify an RPC failure and indicate whether connection reset is needed."""
+    error = classify_grpc_connection_error(exc, operation=operation)
+    return error, should_reset_connection(error)
