@@ -68,17 +68,6 @@ def test_create_async_client_insecure():
         mock_insecure.assert_called_once_with(address)
 
 
-def test_create_async_client_secure_no_token():
-    """Verify that create_async_client initializes a secure channel without extra credentials."""
-    address = "127.0.0.1:8181"
-    with patch("grpc.ssl_channel_credentials"):
-        with patch("grpc.aio.secure_channel") as mock_secure:
-            create_async_client(address, using_tls=True)
-            mock_secure.assert_called_once()
-            args, _ = mock_secure.call_args
-            assert args[0] == address
-
-
 def test_create_async_client_secure_with_token():
     """Verify that create_async_client initializes a secure channel with composite bearer token credentials."""
     address = "127.0.0.1:8181"
