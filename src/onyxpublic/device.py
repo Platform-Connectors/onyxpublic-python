@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import logging
 from collections.abc import Awaitable, Callable
+from contextlib import suppress
 from typing import TypeVar
 
 import grpc
@@ -15,16 +16,18 @@ from pydantic import ValidationError
 from .api import onyx_pb2, onyx_pb2_grpc
 from .client import create_async_client
 from .errors import (
+    DeviceNotConnectedError,
     EventStreamerAlreadyRunningError,
     EventStreamerConnectionError,
-    OnyxDeviceNotConnectedError,
+    OnyxPublicError,
     classify_grpc_connection_error,
+    classify_grpc_connection_error_with_reset,
 )
 from .model import Detection, OnyxIdentification, SystemEvent
 
-T = TypeVar("T", bound=Detection | Exception)
+T = TypeVar("T", bound=Detection | OnyxPublicError)
 DetectionCallback = Callable[[Detection], Awaitable[None] | None]
-ErrorCallback = Callable[[Exception], Awaitable[None] | None]
+ErrorCallback = Callable[[OnyxPublicError], Awaitable[None] | None]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,7 +84,6 @@ class AsyncOnyxDevice:
         if self._connected and self._identification is not None:
             return
 
-        await self._disconnect()
         self._channel = create_async_client(
             self._address,
             using_tls=self._using_tls,
@@ -103,7 +105,7 @@ class AsyncOnyxDevice:
     async def get_identification(self) -> OnyxIdentification:
         """Call GetIdentification once and cache the resulting identity."""
         if self._stub is None:
-            raise OnyxDeviceNotConnectedError(
+            raise DeviceNotConnectedError(
                 "Device is not connected; call connect() before get_identification()"
             )
 
@@ -129,7 +131,7 @@ class AsyncOnyxDevice:
     ) -> list[Detection]:
         """Fetch detections once using the unary GetDetections RPC."""
         if self._stub is None or not self._connected:
-            raise OnyxDeviceNotConnectedError(
+            raise DeviceNotConnectedError(
                 "Device is not connected; call connect() before get_detections()"
             )
 
@@ -139,10 +141,19 @@ class AsyncOnyxDevice:
                 raise ValueError("from_time must be timezone-aware")
             request.since_time.FromDatetime(from_time.astimezone(datetime.timezone.utc))
 
-        response = await self._stub.GetDetections(
-            request,
-            metadata=self._build_optional_metadata(),
-        )
+        try:
+            response = await self._stub.GetDetections(
+                request,
+                metadata=self._build_optional_metadata(),
+            )
+        except grpc.aio.AioRpcError as exc:
+            classified_error, should_reset = classify_grpc_connection_error_with_reset(
+                exc,
+                operation="GetDetections",
+            )
+            if should_reset:
+                await self.close()
+            raise classified_error from exc
 
         detections: list[Detection] = []
         for detection in response.detections:
@@ -163,15 +174,24 @@ class AsyncOnyxDevice:
     async def get_system_events(self) -> list[SystemEvent]:
         """Fetch current system events once using the unary GetSystemEvents RPC."""
         if self._stub is None or not self._connected:
-            raise OnyxDeviceNotConnectedError(
+            raise DeviceNotConnectedError(
                 "Device is not connected; call connect() before get_system_events()"
             )
 
         request = getattr(onyx_pb2, "SystemEventsRequest")()
-        response = await self._stub.GetSystemEvents(
-            request,
-            metadata=self._build_optional_metadata(),
-        )
+        try:
+            response = await self._stub.GetSystemEvents(
+                request,
+                metadata=self._build_optional_metadata(),
+            )
+        except grpc.aio.AioRpcError as exc:
+            classified_error, should_reset = classify_grpc_connection_error_with_reset(
+                exc,
+                operation="GetSystemEvents",
+            )
+            if should_reset:
+                await self.close()
+            raise classified_error from exc
 
         events: list[SystemEvent] = []
         for event in response.events:
@@ -189,7 +209,7 @@ class AsyncOnyxDevice:
                 continue
         return events
 
-    async def start_detection_stream(
+    def start_detection_stream(
         self,
         on_detection: DetectionCallback,
         on_error: ErrorCallback | None = None,
@@ -216,18 +236,14 @@ class AsyncOnyxDevice:
             self._stream_call.cancel()
 
         task = self._stream_task
-        if task is not None:
+        if task is not None and task is not asyncio.current_task():
             task.cancel()
-            try:
+            with suppress(grpc.aio.AioRpcError, asyncio.CancelledError):
                 await task
-            except grpc.aio.AioRpcError:
-                pass
-            except asyncio.CancelledError:
-                pass
+            self._stream_task = None
 
     async def close(self) -> None:
-        """Stop background work and mark the device disconnected."""
-        await self.stop_detection_stream()
+        """Close channel resources and mark the device disconnected."""
         await self._disconnect()
 
     def _build_optional_metadata(self) -> tuple[tuple[str, str], ...] | None:
@@ -285,7 +301,6 @@ class AsyncOnyxDevice:
                         detection, preserving_proto_field_name=True
                     )
                     try:
-                        print(detection_dict)
                         detection_model = Detection.model_validate(detection_dict)
                     except ValidationError as err:
                         _LOGGER.error(
@@ -296,13 +311,24 @@ class AsyncOnyxDevice:
                     await self._call_callback(on_detection, detection_model)
 
         except grpc.aio.AioRpcError as exc:
-            if exc.code() is not grpc.StatusCode.CANCELLED and on_error is not None:
-                await self._call_callback(on_error, exc)
+            if exc.code() is grpc.StatusCode.CANCELLED:
+                return
+
+            classified_error, should_reset = classify_grpc_connection_error_with_reset(
+                exc,
+                operation="StreamDetections",
+            )
+            if should_reset:
+                await self.close()
+            if on_error is not None:
+                await self._call_callback(on_error, classified_error)
 
         finally:
             if self._stream_call is not None:
                 self._stream_call.cancel()
             self._stream_call = None
+            if self._stream_task is asyncio.current_task():
+                self._stream_task = None
 
     async def _call_callback(
         self, callback: Callable[[T], Awaitable[None] | None], arg: T

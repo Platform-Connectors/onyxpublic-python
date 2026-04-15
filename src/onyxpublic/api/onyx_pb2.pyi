@@ -11,7 +11,7 @@ how to build a client;
 """
 
 from collections import abc as _abc
-from common import common_pb2 as _common_pb2
+from onyxpublic.common import common_pb2 as _common_pb2
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf import message as _message
@@ -3054,3 +3054,4 @@ class ChainStatusResponse(_message.Message):
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___ChainStatusResponse: _TypeAlias = ChainStatusResponse  # noqa: Y015
+
