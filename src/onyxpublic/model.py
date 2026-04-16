@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 
 from pydantic import BaseModel, field_validator
 
@@ -49,11 +49,20 @@ class Position(BaseModel):
     custom_scale: CustomScale
 
 
+class CardinalDirection(StrEnum):
+    """Cardinal direction names with short-code API values."""
+
+    North = "N"
+    South = "S"
+    East = "E"
+    West = "W"
+
+
 class DistanceToZone(BaseModel):
     """Distance details between a detection and a named zone."""
 
     name: str | None = None
-    direction: str | None = None
+    direction: CardinalDirection | None = None
     separation: float | None = None
     notes: str | None = None
 

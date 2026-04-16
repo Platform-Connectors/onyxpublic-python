@@ -19,6 +19,12 @@ MOCK_DETECTION = common_pb2.Detection(
     ),
     node_id="node-1",
     node="segment-a",
+    pois=common_pb2.DistanceToZone(
+        name="zone-a",
+        direction="N",
+        separation=12.5,
+        notes="ahead",
+    ),
 )
 
 MOCK_SYSTEM_EVENT = onyx_pb2.SystemEvent(
