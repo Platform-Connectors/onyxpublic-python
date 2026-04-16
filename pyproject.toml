@@ -59,6 +59,7 @@ ignore-paths = [
 
 [tool.pylint.messages_control]
 disable = [
+    "invalid-name",
     "too-many-arguments",
     "too-many-positional-arguments",
     "too-many-locals",

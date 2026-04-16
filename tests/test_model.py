@@ -3,8 +3,22 @@
 from __future__ import annotations
 
 import pytest
+from google.protobuf.json_format import MessageToDict
 
-from onyxpublic.model import Detection, SystemEvent
+from onyxpublic.model import CardinalDirection, Detection, SystemEvent
+from tests import MOCK_DETECTION
+
+
+def test_detection_model_accepts_cardinal_direction_for_pois() -> None:
+    """Detection parsed from shared mock data should accept POI direction code N."""
+
+    payload = MessageToDict(MOCK_DETECTION, preserving_proto_field_name=True)
+
+    detection = Detection.model_validate(payload)
+
+    assert detection.pois is not None
+    assert detection.pois.direction == CardinalDirection.North
+    assert CardinalDirection.North.name == "North"
 
 
 def test_detection_parse_severity_rejects_non_string() -> None:
