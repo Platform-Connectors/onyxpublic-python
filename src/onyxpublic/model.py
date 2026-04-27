@@ -56,6 +56,10 @@ class CardinalDirection(StrEnum):
     South = "S"
     East = "E"
     West = "W"
+    Northeast = "NE"
+    Northwest = "NW"
+    Southeast = "SE"
+    Southwest = "SW"
 
 
 class DistanceToZone(BaseModel):
