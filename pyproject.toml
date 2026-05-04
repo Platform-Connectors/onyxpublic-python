@@ -3,7 +3,7 @@ requires = ["uv_build>=0.8.0,<0.9.0"]
 build-backend = "uv_build"
 
 [project]
-name = "onyxpublic"
+name = "onyxpublic-python"
 version = "0.1.3"
 description = "Python API for Sintela Onyx protobuf"
 readme = "README.md"
