@@ -15,16 +15,10 @@ The package currently exposes:
 
 ## Install
 
-Install the package from the repository root:
+Install the package from [PyPI](https://pypi.org/project/onyxpublic/):
 
 ```bash
-pip install .
-```
-
-For local development:
-
-```bash
-pip install -e .
+uv add onyxpublic-python
 ```
 
 ## Quick Start
