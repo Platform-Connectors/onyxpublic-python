@@ -9,10 +9,10 @@ description = "Python API for Sintela Onyx protobuf"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "grpcio==1.80.0",
-    "protobuf==6.33.6",
-    "googleapis-common-protos==1.74.0",
-    "pydantic==2.12.5",
+    "grpcio==1.83.0",
+    "protobuf==7.35.1",
+    "googleapis-common-protos==1.75.0",
+    "pydantic==2.13.4",
 ]
 
 [project.optional-dependencies]
