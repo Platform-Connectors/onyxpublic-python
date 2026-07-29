@@ -16,4 +16,4 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: platform-connectors/actions/publish-library@v1.0
+      - uses: platform-connectors/actions/publish-library@v1.1
