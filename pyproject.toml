@@ -9,28 +9,28 @@ description = "Python API for Sintela Onyx protobuf"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "grpcio==1.83.0",
-    "protobuf==7.35.1",
-    "googleapis-common-protos==1.75.0",
-    "pydantic==2.13.4",
+    "grpcio==1.84.0",
+    "protobuf==7.36.2",
+    "googleapis-common-protos==1.75.4",
+    "pydantic==2.13.5",
 ]
 
 [project.optional-dependencies]
-plot = ["numpy>=1.26.0", "matplotlib>=3.8.0"]
+plot = ["numpy>=2.4.6", "matplotlib>=3.11.2"]
 
 [dependency-groups]
 dev = [
-    "mypy==1.20.0",
+    "mypy==2.3.1",
     "types-protobuf",
     "types-grpcio",
-    "ruff>=0.15.1",
-    "pylint==4.0.5",
-    "pytest>=8.3.0",
-    "pytest-asyncio>=0.24.0",
+    "ruff>=0.16.9",
+    "pylint==4.0.9",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "dotenv>=0.9.9",
-    "grpcio-tools>=1.80.0",
-    "mypy-protobuf>=5.0.0",
+    "grpcio-tools>=1.84.0",
+    "mypy-protobuf>=5.1.0",
 ]
 
 [tool.pytest.ini_options]

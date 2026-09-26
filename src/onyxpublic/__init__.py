@@ -6,8 +6,8 @@ from .model import Detection
 
 __all__ = [
     "AsyncOnyxDevice",
-    "Detection",
-    "OnyxPublicError",
     "AuthError",
     "ConnectError",
+    "Detection",
+    "OnyxPublicError",
 ]
