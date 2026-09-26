@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
-import logging
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
+import datetime
+import logging
+from pathlib import Path
 from typing import TypeVar
 
-import grpc
 from google.protobuf.json_format import MessageToDict
+import grpc
 from pydantic import ValidationError
 
 from .api import onyx_pb2, onyx_pb2_grpc
@@ -19,6 +20,7 @@ from .errors import (
     DeviceNotConnectedError,
     EventStreamerAlreadyRunningError,
     EventStreamerConnectionError,
+    InvalidFileError,
     OnyxPublicError,
     classify_grpc_connection_error,
     classify_grpc_connection_error_with_reset,
@@ -83,6 +85,11 @@ class AsyncOnyxDevice:
         """Connect to the device and cache identification."""
         if self._connected and self._identification is not None:
             return
+
+        if self._server_cert_path and not Path(self._server_cert_path).is_file():
+            raise InvalidFileError(
+                f"Server certificate not found: {self._server_cert_path}"
+            )
 
         self._channel = create_async_client(
             self._address,
