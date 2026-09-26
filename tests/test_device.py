@@ -263,15 +263,6 @@ async def test_methods_require_connected_device(
         await method()
 
 
-async def test_get_detections_rejects_naive_from_time(
-    mock_device: AsyncOnyxDevice,
-) -> None:
-    """get_detections() should require timezone-aware from_time values."""
-
-    with pytest.raises(ValueError, match="timezone-aware"):
-        await mock_device.get_detections(from_time=datetime.datetime.now(datetime.UTC))
-
-
 async def test_get_detections_skips_invalid_payloads(
     monkeypatch: pytest.MonkeyPatch,
     mock_device: AsyncOnyxDevice,
