@@ -116,7 +116,7 @@ class AsyncOnyxDevice:
                 "Device is not connected; call connect() before get_identification()"
             )
 
-        request = getattr(onyx_pb2, "IdentificationRequest")()
+        request = onyx_pb2.IdentificationRequest()
         metadata = self._build_optional_metadata()
         response = await self._stub.GetIdentification(request, metadata=metadata)
 
@@ -142,11 +142,11 @@ class AsyncOnyxDevice:
                 "Device is not connected; call connect() before get_detections()"
             )
 
-        request = getattr(onyx_pb2, "DetectionsRequest")()
+        request = onyx_pb2.DetectionsRequest()
         if from_time is not None:
             if from_time.tzinfo is None:
                 raise ValueError("from_time must be timezone-aware")
-            request.since_time.FromDatetime(from_time.astimezone(datetime.timezone.utc))
+            request.since_time.FromDatetime(from_time.astimezone(datetime.UTC))
 
         try:
             response = await self._stub.GetDetections(
@@ -185,7 +185,7 @@ class AsyncOnyxDevice:
                 "Device is not connected; call connect() before get_system_events()"
             )
 
-        request = getattr(onyx_pb2, "SystemEventsRequest")()
+        request = onyx_pb2.SystemEventsRequest()
         try:
             response = await self._stub.GetSystemEvents(
                 request,
@@ -263,11 +263,11 @@ class AsyncOnyxDevice:
         self, from_seconds_ago: int
     ) -> onyx_pb2.StreamDetectionsRequest:
         """Create a StreamDetectionsRequest with optional historical start time."""
-        request = getattr(onyx_pb2, "StreamDetectionsRequest")()
+        request = onyx_pb2.StreamDetectionsRequest()
         if from_seconds_ago > 0:
-            from_time = datetime.datetime.now(
-                datetime.timezone.utc
-            ) - datetime.timedelta(seconds=from_seconds_ago)
+            from_time = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
+                seconds=from_seconds_ago
+            )
             request.from_time.FromDatetime(from_time)
         return request
 
