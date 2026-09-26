@@ -1,18 +1,23 @@
-"""
-Copyright © 2026 Sintela Ltd. All rights reserved.
-gRPC client utilities for connecting to Onyx systems.
-"""
+"""gRPC client utilities for connecting to Onyx systems."""
 
 import grpc
+
+from .errors import InvalidFileError
 
 
 class BearerTokenAuth(grpc.AuthMetadataPlugin):
     """gRPC metadata plugin for bearer token authentication."""
 
-    def __init__(self, token: str):
+    def __init__(self, token: str) -> None:
+        """Initialize bearer token auth."""
         self.token = token
 
-    def __call__(self, context, callback):
+    def __call__(
+        self,
+        context: grpc.AuthMetadataContext,
+        callback: grpc.AuthMetadataPluginCallback,
+    ) -> None:
+        """Set the call function."""
         metadata = (("authorization", f"Bearer {self.token}"),)
         callback(metadata, None)
 
@@ -20,21 +25,25 @@ class BearerTokenAuth(grpc.AuthMetadataPlugin):
 def _load_tls_credentials(
     server_cert_path: str | None = None,
 ) -> grpc.ChannelCredentials:
-    """
-    Load TLS credentials for a gRPC client.
+    """Load TLS credentials for a gRPC client.
 
     Args:
         server_cert_path: Optional path to server CA certificate
 
     Returns:
         gRPC channel credentials
+
     """
     # Load server CA certificate if provided
     root_certificates = None
     if server_cert_path:
-        with open(server_cert_path, "rb") as f:
-            root_certificates = f.read()
-
+        try:
+            with open(server_cert_path, "rb") as f:
+                root_certificates = f.read()
+        except OSError as err:
+            raise InvalidFileError(
+                f"Failed to read server certificate from {server_cert_path}: {err}"
+            ) from err
     # Create credentials
     # If server_cert_path is provided, use it as root certificate
     # Otherwise, use system CAs (None)
@@ -52,8 +61,7 @@ def create_async_client(
     using_tls: bool = True,
     server_cert_path: str | None = None,
 ) -> grpc.aio.Channel:
-    """
-    Create a new async gRPC client channel.
+    """Create a new async gRPC client channel.
 
     Args:
         address: Address including port number to connect to (e.g., "127.0.0.1:8181")
@@ -67,6 +75,7 @@ def create_async_client(
 
     Returns:
         Async gRPC channel
+
     """
     if using_tls:
         credentials = _load_tls_credentials(
@@ -74,9 +83,7 @@ def create_async_client(
         )
 
         call_credentials = grpc.metadata_call_credentials(BearerTokenAuth(bearer_token))
-        credentials = grpc.composite_channel_credentials(
-            credentials, call_credentials
-        )
+        credentials = grpc.composite_channel_credentials(credentials, call_credentials)
 
         return grpc.aio.secure_channel(address, credentials)
     return grpc.aio.insecure_channel(address)

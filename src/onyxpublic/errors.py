@@ -95,6 +95,10 @@ class DeviceNotConnectedError(OnyxPublicError, RuntimeError):
     """Raised when an operation requires a connected device."""
 
 
+class InvalidFileError(OnyxPublicError):
+    """Raised when a specified file path cannot be found."""
+
+
 def _error_text(exc: grpc.aio.AioRpcError) -> str:
     details = (exc.details() or "").lower()
     debug = (getattr(exc, "debug_error_string", lambda: "")() or "").lower()

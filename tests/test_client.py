@@ -9,6 +9,7 @@ from onyxpublic.client import (
     _load_tls_credentials,
     create_async_client,
 )
+from onyxpublic.errors import InvalidFileError
 
 
 @pytest.mark.parametrize(
@@ -29,6 +30,12 @@ def test_bearer_token_auth_call(
     auth(context, callback)
 
     callback.assert_called_once_with(expected_metadata, None)
+
+
+def test_load_tls_credentials_invalid_cert() -> None:
+    """_load_tls_credentials should raise if the certificate path is invalid."""
+    with pytest.raises(InvalidFileError):
+        _load_tls_credentials("invalid-cert-path.crt")
 
 
 @pytest.mark.parametrize(
@@ -52,12 +59,12 @@ def test_load_tls_credentials(
             )
         return
 
-    with patch("builtins.open", mock_open(read_data=read_data)):
-        with patch("grpc.ssl_channel_credentials") as mock_ssl:
-            _load_tls_credentials(cert_path)
-            mock_ssl.assert_called_once_with(
-                root_certificates=expected_root_certificates
-            )
+    with (
+        patch("builtins.open", mock_open(read_data=read_data)),
+        patch("grpc.ssl_channel_credentials") as mock_ssl,
+    ):
+        _load_tls_credentials(cert_path)
+        mock_ssl.assert_called_once_with(root_certificates=expected_root_certificates)
 
 
 def test_create_async_client_insecure():
@@ -72,12 +79,14 @@ def test_create_async_client_secure_with_token():
     """Verify that create_async_client initializes a secure channel with composite bearer token credentials."""
     address = "127.0.0.1:8181"
     token = "secret-token"
-    with patch("grpc.ssl_channel_credentials"):
-        with patch("grpc.metadata_call_credentials") as mock_meta:
-            with patch("grpc.composite_channel_credentials") as mock_composite:
-                with patch("grpc.aio.secure_channel") as mock_secure:
-                    create_async_client(address, using_tls=True, bearer_token=token)
+    with (
+        patch("grpc.ssl_channel_credentials"),
+        patch("grpc.metadata_call_credentials") as mock_meta,
+        patch("grpc.composite_channel_credentials") as mock_composite,
+        patch("grpc.aio.secure_channel") as mock_secure,
+    ):
+        create_async_client(address, using_tls=True, bearer_token=token)
 
-                    mock_meta.assert_called_once()
-                    mock_composite.assert_called_once()
-                    mock_secure.assert_called_once()
+        mock_meta.assert_called_once()
+        mock_composite.assert_called_once()
+        mock_secure.assert_called_once()
