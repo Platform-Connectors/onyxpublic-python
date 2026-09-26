@@ -19,6 +19,7 @@ from onyxpublic.errors import (
     DeviceNotConnectedError,
     EventStreamerAlreadyRunningError,
     EventStreamerConnectionError,
+    InvalidFileError,
     OnyxPublicError,
 )
 from onyxpublic.model import OnyxIdentification, SystemEvent
@@ -48,7 +49,6 @@ class _AsyncStreamCall:
 
     def cancel(self) -> None:
         """Cancel the stream call (no-op for test double)."""
-        pass
 
 
 class _RaisingAsyncStreamCall:
@@ -68,7 +68,6 @@ class _RaisingAsyncStreamCall:
 
     def cancel(self) -> None:
         """Cancel the stream call (no-op for test double)."""
-        pass
 
 
 def _valid_detection_payload() -> dict[str, object]:
@@ -100,6 +99,17 @@ async def test_device_properties_expose_address_and_identity(
 
     assert device.address == "127.0.0.1:9191"
     assert device.identity is None
+
+
+async def test_connect_invalid_cert(
+    device_factory: Callable[..., AsyncOnyxDevice],
+) -> None:
+    """connect() should raise InvalidFileError when the server cert path is invalid."""
+
+    device = device_factory(server_cert_path="invalid-cert-path.crt")
+
+    with pytest.raises(InvalidFileError):
+        await device.connect()
 
 
 @pytest.mark.parametrize(

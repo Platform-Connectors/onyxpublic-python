@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
-from contextlib import suppress
 import datetime
 import logging
+from collections.abc import Awaitable, Callable
+from contextlib import suppress
 from pathlib import Path
 from typing import TypeVar
 
-from google.protobuf.json_format import MessageToDict
 import grpc
+from google.protobuf.json_format import MessageToDict
 from pydantic import ValidationError
 
 from .api import onyx_pb2, onyx_pb2_grpc
