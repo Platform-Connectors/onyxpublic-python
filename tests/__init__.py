@@ -36,11 +36,11 @@ MOCK_SYSTEM_EVENT = onyx_pb2.SystemEvent(
     description="test system event",
 )
 MOCK_SYSTEM_EVENT.bad_time.FromDatetime(
-    datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
+    datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
 )
 MOCK_DETECTION.start_time.FromDatetime(
-    datetime.datetime(2025, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+    datetime.datetime(2025, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
 )
 MOCK_DETECTION.last_update_time.FromDatetime(
-    datetime.datetime(2025, 1, 1, 0, 0, 10, tzinfo=datetime.timezone.utc)
+    datetime.datetime(2025, 1, 1, 0, 0, 10, tzinfo=datetime.UTC)
 )

@@ -269,7 +269,7 @@ async def test_get_detections_rejects_naive_from_time(
     """get_detections() should require timezone-aware from_time values."""
 
     with pytest.raises(ValueError, match="timezone-aware"):
-        await mock_device.get_detections(from_time=datetime.datetime.now())
+        await mock_device.get_detections(from_time=datetime.datetime.now(datetime.UTC))
 
 
 async def test_get_detections_skips_invalid_payloads(
@@ -301,7 +301,7 @@ async def test_get_detections_parses_valid_payloads_and_since_time(
         return_value=onyx_pb2.DetectionsResponse(detections=[mock_detection])
     )
 
-    from_time = datetime.datetime.now(datetime.timezone.utc)
+    from_time = datetime.datetime.now(datetime.UTC)
     detections = await mock_device.get_detections(from_time=from_time)
 
     assert len(detections) == 1
